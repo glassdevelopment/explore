@@ -1,5 +1,6 @@
 package uy.edu.fing.proygrad.explore;
 
+import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.util.Log;
@@ -30,12 +31,12 @@ public class CameraManager {
         }
     }
 
-    public static void takePicture() {
+    public static void takePicture(Context context) {
         try {
             SurfaceTexture surfaceTexture = new SurfaceTexture(10);
             camera.setPreviewTexture(surfaceTexture);
             camera.startPreview();
-            camera.takePicture(null, null, new PhotoHandler());
+            camera.takePicture(null, null, new PhotoHandler(context));
         }
         catch (Exception e) {
             Log.e(TAG, e.getMessage());

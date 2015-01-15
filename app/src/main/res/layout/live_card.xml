@@ -3,7 +3,10 @@
     android:layout_height="match_parent" android:padding="@dimen/card_margin"
     tools:context=".LiveCardService">
 
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+    <TextView
+        android:id="@+id/main_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:text="@string/hello_world" />
 
 </RelativeLayout>
