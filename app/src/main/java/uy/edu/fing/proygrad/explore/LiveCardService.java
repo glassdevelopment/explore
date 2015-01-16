@@ -6,12 +6,22 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Handler;
 import android.os.IBinder;
+import android.util.Log;
 import android.widget.RemoteViews;
 
 import com.google.android.glass.timeline.LiveCard;
 import com.google.android.glass.timeline.LiveCard.PublishMode;
+import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.util.Date;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -85,10 +95,57 @@ public class LiveCardService extends Service {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            String token = intent.getStringExtra("token");
-            RemoteViews remoteViews = new RemoteViews(getPackageName(), R.layout.live_card);
-            remoteViews.setTextViewText(R.id.main_text, token);
-            mLiveCard.setViews(remoteViews);
+            final String token = intent.getStringExtra("token");
+            Log.d(TAG, token);
+
+            final Handler handler = new Handler();
+
+            final Runnable r = new Runnable() {
+                private Runnable me = this;
+
+                public void run() {
+                    OkHttpClient client = new OkHttpClient();
+                    Request request = new Request.Builder()
+                            .url("https://camfind.p.mashape.com/image_responses/" + token)
+                            .header("X-Mashape-Key", "t1ohJF4J0tmsh3ZinpXxzpqwel0Sp1QHKaUjsnz1rKK7wVbzaR")
+                            .header("Accept", "application/json")
+                            .build();
+
+                    client.newCall(request).enqueue(new Callback() {
+                        @Override
+                        public void onFailure(Request request, IOException e) {
+                            e.printStackTrace();
+                        }
+
+                        @Override
+                        public void onResponse(Response response) throws IOException {
+                            String responseString = response.body().string();
+
+                            if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
+
+                            try {
+                                JSONObject json = new JSONObject(responseString);
+                                String status = json.getString("status");
+
+                                if (status.equals("completed")) {
+                                    String name = json.getString("name");
+
+                                    RemoteViews remoteViews = new RemoteViews(getPackageName(), R.layout.live_card);
+                                    remoteViews.setTextViewText(R.id.main_text, name);
+                                    mLiveCard.setViews(remoteViews);
+                                } else {
+                                    handler.postDelayed(me, 2000);
+                                }
+
+                            } catch (JSONException e) {
+                                Log.e(TAG, e.getMessage());
+                            }
+                        }
+                    });
+                }
+            };
+
+            handler.postDelayed(r, 8001);
         }
 
         // constructor
